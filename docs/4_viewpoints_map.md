@@ -6,7 +6,7 @@
 
 
 
-Нижче наведено таблицю відповідності для нашого проєкту:
+Нижче наведено таблицю відповідності для проєкту:
 
 
 
@@ -14,13 +14,13 @@
 
 | :--- | :--- | :--- | :--- |
 
-| \*\*Context Viewpoint\*\* | C4 Level 1: System Context Diagram | C4 Model / Structurizr | Business Owner, End User, System Integrator\[cite: 1] |
+| \*\*Context Viewpoint\*\* | C4 Level 1: System Context Diagram | C4 Model / Structurizr | Business Owner, End User, System Integrator |
 
-| \*\*Container Viewpoint\*\* | C4 Level 2: Container Diagram | C4 Model / PlantUML | Software Architect, Lead Dev, DevOps\[cite: 1] |
+| \*\*Container Viewpoint\*\* | C4 Level 2: Container Diagram | C4 Model / PlantUML | Software Architect, Lead Dev, DevOps |
 
-| \*\*Structural Viewpoint\*\* | UML Component / Class Diagram | UML 2.5 | Developers, Module Owners\[cite: 1] |
+| \*\*Structural Viewpoint\*\* | UML Component / Class Diagram | UML 2.5 | Developers, Module Owners |
 
-| \*\*Behavioral Viewpoint\*\* | UML Sequence / State Diagram | UML 2.5 | Backend Developers, QA Engineers\[cite: 1] |
+| \*\*Behavioral Viewpoint\*\* | UML Sequence / State Diagram | UML 2.5 | Backend Developers, QA Engineers |
 
-| \*\*Deployment Viewpoint\*\* | UML Deployment Diagram | UML 2.5 / C4 | DevOps, Infrastructure Engineers, Security Officer\[cite: 1] |
+| \*\*Deployment Viewpoint\*\* | UML Deployment Diagram | UML 2.5 / C4 | DevOps, Infrastructure Engineers, Security Officer |
 
