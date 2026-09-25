@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package logistics;
+
+import "google/protobuf/timestamp.proto";
+
+// Перечислення статусів із обов'язковим нульовим значенням
+enum ParcelStatus {
+  PARCEL_STATUS_UNSPECIFIED = 0;
+  PARCEL_STATUS_PENDING = 1;
+  PARCEL_STATUS_IN_TRANSIT = 2;
+  PARCEL_STATUS_DELIVERED = 3;
+  PARCEL_STATUS_CANCELLED = 4;
+}
+
+// Вкладене повідомлення для GPS-координат
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+// Запит для отримання деталей вантажу
+message GetParcelRequest {
+  string parcel_id = 1;
+}
+
+// Відповідь із повною інформацією про вантаж
+message ParcelDetailsResponse {
+  string parcel_id = 1;
+  string tracking_number = 2;
+  ParcelStatus status = 3;
+  double weight = 4;
+  bool is_fragile = 5;
+  GeoLocation current_location = 6; // Використання вкладеного типу
+  google.protobuf.Timestamp created_at = 7; // Використання Timestamp
+}
+
+// Запит на оновлення статусу
+message UpdateStatusRequest {
+  string parcel_id = 1;
+  ParcelStatus new_status = 2;
+}
+
+// Відповідь на оновлення статусу
+message UpdateStatusResponse {
+  bool success = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+// Повідомлення для потокової передачі телеметрії
+message TelemetryStreamRequest {
+  string parcel_id = 1;
+  GeoLocation location = 2;
+  int64 timestamp_ms = 3; // Сувора типізація int64
+}
+
+// Відповідь сервера після завершення потоку телеметрії
+message TelemetryStreamResponse {
+  int64 points_processed = 1;
+  bool success = 2;
+}
+
+// Опис сервісу міжсервісної взаємодії
+service TrackingService {
+  // 1. Unary RPC: Отримання інформації про вантаж
+  rpc GetParcelDetails (GetParcelRequest) returns (ParcelDetailsResponse);
+
+  // 2. Unary RPC: Оновлення статусу вантажу
+  rpc UpdateParcelStatus (UpdateStatusRequest) returns (UpdateStatusResponse);
+
+  // 3. Client Streaming RPC: Безперервна передача GPS-координат від IoT-датчика
+  rpc StreamTelemetry (stream TelemetryStreamRequest) returns (TelemetryStreamResponse);
+}

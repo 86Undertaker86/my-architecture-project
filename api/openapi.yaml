@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: Smart IoT Logistics & Parcel Tracking API
+  description: Система моніторингу переміщення вантажів у реальному часі з прийманням GPS-телеметрії, розрахунком маршрутів та управлінням доставкою.
+  version: 1.0.0
+  contact:
+    name: Danil Sidorchuk
+    email: d.sidorchuk07@gmail.com
+servers:
+  - url: http://localhost:4010
+    description: Prism Mock Server (Local)
+paths:
+  /parcels:
+    get:
+      summary: Отримати список вантажів
+      description: Повертає список вантажів з можливістю фільтрації за статусом та пагінацією.
+      parameters:
+        - name: status
+          in: query
+          description: Фільтр за статусом доставки
+          schema:
+            type: string
+            enum: [PENDING, IN_TRANSIT, DELIVERED, CANCELLED]
+        - name: limit
+          in: query
+          description: Максимальна кількість записів на сторінці
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Зсув для пагінації
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Успішне отримання списку
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParcelResponse'
+    post:
+      summary: Реєстрація нового вантажу
+      description: Створює новий запис для відстеження вантажу в системі.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParcelCreateRequest'
+      responses:
+        '201':
+          description: Вантаж успішно зареєстровано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /parcels/{parcelId}:
+    parameters:
+      - name: parcelId
+        in: path
+        required: true
+        description: Унікальний ідентифікатор вантажу
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Отримати деталі вантажу
+      description: Повертає повну інформацію про конкретний вантаж та його поточне місцезнаходження.
+      responses:
+        '200':
+          description: Деталі вантажу
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Оновити статус та IoT-телеметрію вантажу
+      description: Використовується IoT-датчиками для передачі поточного GPS-місцезнаходження та зміни статусу.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryUpdateRequest'
+      responses:
+        '200':
+          description: Телеметрію успішно оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Скасувати відправлення
+      description: Скасовує реєстрацію вантажу та зупиняє його трекінг.
+      responses:
+        '204':
+          description: Відправлення успішно скасовано (No Content)
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    ParcelResponse:
+      type: object
+      required:
+        - id
+        - trackingNumber
+        - status
+        - weight
+        - destination
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        trackingNumber:
+          type: string
+          example: "UA-987654321"
+        status:
+          type: string
+          enum: [PENDING, IN_TRANSIT, DELIVERED, CANCELLED]
+          example: IN_TRANSIT
+        weight:
+          type: number
+          format: double
+          example: 14.5
+        destination:
+          type: string
+          example: "м. Хмельницький, вул. Проскурівська 1"
+        currentLocation:
+          $ref: '#/components/schemas/GeoLocation'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-09-25T10:00:00Z"
+
+    ParcelCreateRequest:
+      type: object
+      required:
+        - weight
+        - destination
+        - customerId
+      properties:
+        weight:
+          type: number
+          format: double
+          minimum: 0.1
+          maximum: 20000.0
+          example: 14.5
+        destination:
+          type: string
+          minLength: 5
+          maxLength: 255
+          example: "м. Київ, вул. Хрещатик 10"
+        customerId:
+          type: string
+          format: uuid
+          example: "a8098c1a-f86e-11da-bd1a-00112444be1e"
+
+    TelemetryUpdateRequest:
+      type: object
+      required:
+        - location
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_TRANSIT, DELIVERED, CANCELLED]
+          example: IN_TRANSIT
+        location:
+          $ref: '#/components/schemas/GeoLocation'
+
+    GeoLocation:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 49.42298
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: 26.98713
+
+    ProblemDetails:
+      type: object
+      description: Формат помилки за стандартом RFC 7807 Problem Details
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://api.logistics.com/errors/bad-request"
+        title:
+          type: string
+          example: "Bad Request"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "Некоректний формат вхідних даних."
+        instance:
+          type: string
+          format: uri
+          example: "/parcels"
+
+  responses:
+    BadRequest:
+      description: Невалідний запит (наприклад, синтаксична помилка JSON)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFound:
+      description: Ресурс не знайдено
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+            example:
+              type: "https://api.logistics.com/errors/not-found"
+              title: "Not Found"
+              status: 404
+              detail: "Вантаж із вказаним ID не знайдено."
+    UnprocessableEntity:
+      description: Помилка валідації бізнес-правил (наприклад, невірна вага)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+            example:
+              type: "https://api.logistics.com/errors/validation-error"
+              title: "Unprocessable Entity"
+              status: 422
+              detail: "Вага вантажу не може бути меншою за 0.1 кг."
